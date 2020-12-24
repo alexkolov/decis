@@ -26,6 +26,5 @@ export async function deleteBlock() {
 }
 
 export async function queryBlocks() {
-  const models = await DataStore.query(Block);
-  console.log(models);
+  return await DataStore.query(Block);
 }
