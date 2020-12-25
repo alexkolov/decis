@@ -1,13 +1,13 @@
-import { DataStore } from "@aws-amplify/datastore";
-import { Block, BlockType } from "../models";
+import { DataStore } from '@aws-amplify/datastore'
+import { Block, BlockType } from '../models'
 
 export async function createBlock() {
   await DataStore.save(
     new Block({
       type: BlockType.RADIO,
-      name: "Lorem ipsum dolor sit amet",
+      name: 'Lorem ipsum dolor sit amet',
     })
-  );
+  )
 }
 
 export async function updateBlock() {
@@ -21,10 +21,10 @@ export async function updateBlock() {
 }
 
 export async function deleteBlock() {
-  const modelToDelete = await DataStore.query(Block, 123456789);
-  DataStore.delete(modelToDelete);
+  const modelToDelete = await DataStore.query(Block, 123456789)
+  DataStore.delete(modelToDelete)
 }
 
 export async function queryBlocks() {
-  return await DataStore.query(Block);
+  return await DataStore.query(Block)
 }

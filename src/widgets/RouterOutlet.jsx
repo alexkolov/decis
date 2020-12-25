@@ -1,6 +1,6 @@
 import { Switch, Route } from 'react-router-dom'
 import FlowListPage from '../pages/FlowList'
-import BlockListPage from '../pages/BlockList'
+import Flow from '../pages/Flow'
 import HomePage from '../pages/Home'
 
 export default function RouterOutlet() {
@@ -10,8 +10,8 @@ export default function RouterOutlet() {
         <FlowListPage />
       </Route>
 
-      <Route path="/flow/new/block-list">
-        <BlockListPage />
+      <Route path="/flow/new">
+        <Flow />
       </Route>
 
       <Route path="/">

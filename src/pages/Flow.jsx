@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import * as Api from '../api/block'
+import { Card, Title } from '../widgets/Card'
 
 function createBlock() {
   console.log('create Block')
   Api.createBlock()
 }
 
-function BlockListEntry({ id, type, name }, idx) {
+function Block({ id, type, name }, idx) {
   const inner =
     id !== 'empty' ? (
-      <div className="BlockListEntry">
+      <div className="Block">
         <div>#{idx + 1}</div>
         <div>{type}</div>
         <div>{name}</div>
@@ -20,12 +21,17 @@ function BlockListEntry({ id, type, name }, idx) {
   return <div key={id}>{inner}</div>
 }
 
-function BlockList({ blocks }) {
+function Flow({ blocks }) {
   console.log('blocks', blocks)
   const entries = blocks.length ? blocks : [{ id: 'empty' }]
   return (
-    <div className="BlockList">
-      {entries.map((el, idx) => BlockListEntry(el, idx))}
+    <div className="Flow mx-2">
+      <Card>
+        <Title>Name of the Flow</Title>
+        <div className="p-2">
+          {entries.map((el, idx) => Block(el, idx))}
+        </div>
+      </Card>
     </div>
   )
 }
@@ -43,10 +49,9 @@ export default function Page() {
   }, [query])
 
   return (
-    <div className="BlockListPage">
-      <h1>Blocks</h1>
+    <div className="FlowPage">
       <button onClick={createBlock}>Create</button>
-      <BlockList blocks={blocks}></BlockList>
+      <Flow blocks={blocks}></Flow>
     </div>
   )
 }
