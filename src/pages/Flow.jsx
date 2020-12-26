@@ -23,21 +23,23 @@ function Block({ id, type, name }, idx) {
 // const entries = blocks.length ? blocks : [{ id: 'empty' }]
 // <div className="p-2">{entries.map((el, idx) => Block(el, idx))}</div>
 
-function BlockControls() {
-  const Button = ({ children }) => {
+function BlockControls(events) {
+  console.log('events.addCheckable', events.addCheckable)
+  const Button = (props) => {
     return (
       <button
         type="button"
         className="border border-gray-200 bg-gray-200 text-gray-700 rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-300 focus:outline-none focus:shadow-outline"
+        {...props}
       >
-        {children}
+        {props.children}
       </button>
     )
   }
 
   return (
     <div>
-      <Button>Add</Button>
+      <Button onClick={events.addCheckable}>Add</Button>
       <Button>Del</Button>
       <Button>Up</Button>
       <Button>Down</Button>
@@ -45,11 +47,11 @@ function BlockControls() {
   )
 }
 
-function Block({ id, name }) {
+function Block({ id, name }, events) {
   return (
     <div key={id} className="flex justify-between">
       <div className="flex items-center">{name}</div>
-      <BlockControls />
+      <BlockControls {...events}/>
     </div>
   )
 }
@@ -71,7 +73,9 @@ function Flow({ name, blocks = emptyBlocks, events }) {
         >
           {name}
         </Title>
-        <div className="blocks p-2">{blocks.map(Block)}</div>
+        <div className="blocks p-2">
+          {blocks.map((el) => Block(el, events))}
+        </div>
       </Card>
     </div>
   )
@@ -116,18 +120,18 @@ export default function Page() {
     addCheckable,
     deleteCheckable,
     moveCheckable,
-  ].reduce((acc, el) => ({
-    ...acc,
-    [el.name]: withId(id, el)
-  }), {})
+  ].reduce(
+    (acc, el) => ({
+      ...acc,
+      [el.name]: withId(id, el),
+    }),
+    {}
+  )
 
   return (
     <div className="FlowPage">
       {id !== 'not-found' ? (
-        <Flow
-          {...flow}
-          events={events}
-        ></Flow>
+        <Flow {...flow} events={events}></Flow>
       ) : (
         <div>Flow not found</div>
       )}
