@@ -1,0 +1,24 @@
+export function noop() {}
+
+export function withPrompt(
+  question,
+  defaultAnswer = '',
+  onCancel = noop,
+  onInputSuccess = noop,
+  onInputError = noop,
+) {
+  return () => {
+    const input = prompt(question, defaultAnswer)
+
+    const isCanceled = input === null
+    if (isCanceled) {
+      return onCancel.call(null)
+    }
+
+    if (input) {
+      return onInputSuccess.call(null, input)
+    } else {
+      return onInputError.call(null)
+    }
+  }
+}

@@ -5,12 +5,16 @@ import { schema } from './schema';
 const BlockType = {
   "RADIO": "RADIO",
   "DROPDOWN": "DROPDOWN",
-  "TOGGLE": "TOGGLE"
+  "TOGGLE": "TOGGLE",
+  "CHECKABLE": "CHECKABLE"
 };
 
-const { Block } = initSchema(schema);
+const { Flow, FlowCheckable, Checkable, Block } = initSchema(schema);
 
 export {
+  Flow,
+  FlowCheckable,
+  Checkable,
   Block,
   BlockType
 };

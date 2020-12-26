@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
-import * as Api from '../api/block'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { withPrompt } from '../utils/core'
+import * as Api from '../api/flow'
 import { Card, Title } from '../widgets/Card'
 
-function createBlock() {
-  console.log('create Block')
-  Api.createBlock()
-}
-
+/*
 function Block({ id, type, name }, idx) {
   const inner =
     id !== 'empty' ? (
@@ -20,38 +18,119 @@ function Block({ id, type, name }, idx) {
     )
   return <div key={id}>{inner}</div>
 }
+*/
 
-function Flow({ blocks }) {
-  console.log('blocks', blocks)
-  const entries = blocks.length ? blocks : [{ id: 'empty' }]
+// const entries = blocks.length ? blocks : [{ id: 'empty' }]
+// <div className="p-2">{entries.map((el, idx) => Block(el, idx))}</div>
+
+function BlockControls() {
+  const Button = ({ children }) => {
+    return (
+      <button
+        type="button"
+        className="border border-gray-200 bg-gray-200 text-gray-700 rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-300 focus:outline-none focus:shadow-outline"
+      >
+        {children}
+      </button>
+    )
+  }
+
   return (
-    <div className="Flow mx-2">
+    <div>
+      <Button>Add</Button>
+      <Button>Del</Button>
+      <Button>Up</Button>
+      <Button>Down</Button>
+    </div>
+  )
+}
+
+function Block({ id, name }) {
+  return (
+    <div key={id} className="flex justify-between">
+      <div className="flex items-center">{name}</div>
+      <BlockControls />
+    </div>
+  )
+}
+
+const emptyBlocks = [{ id: 'empty-block', name: 'Empty' }]
+
+function Flow({ name, blocks = emptyBlocks, events }) {
+  return (
+    <div className="Flow mt-5 mx-2">
       <Card>
-        <Title>Name of the Flow</Title>
-        <div className="p-2">
-          {entries.map((el, idx) => Block(el, idx))}
-        </div>
+        <Title
+          onDoubleClick={withPrompt(
+            'Change name?',
+            name,
+            undefined,
+            events.updateFlowName,
+            () => alert('Name can not be empty!')
+          )}
+        >
+          {name}
+        </Title>
+        <div className="blocks p-2">{blocks.map(Block)}</div>
       </Card>
     </div>
   )
 }
 
+async function updateFlowName(id, name) {
+  console.log('updateFlowName', name)
+  const result = await Api.updateFlowName(id, name)
+  console.log(result)
+}
+
+function addCheckable(flowId, checkable) {
+  console.log('addCheckable')
+}
+
+function deleteCheckable(flowId, checkableId) {
+  console.log('deleteCheckable')
+}
+
+function moveCheckable(flowId, checkableId, direction) {
+  console.log('moveCheckable')
+}
+
 export default function Page() {
-  const [blocks, setBlocks] = useState([])
-  const [query, setQuery] = useState('all')
+  const [flow, setFlow] = useState(null)
+
+  let { id } = useParams()
 
   useEffect(() => {
-    const queryBlocks = async () => {
-      const result = await Api.queryBlocks()
-      setBlocks(result)
+    const loadFlow = async () => {
+      const result = await Api.readFlow(id)
+      console.log('result', result)
+      setFlow(result)
     }
-    queryBlocks()
-  }, [query])
+    loadFlow()
+  }, [id])
+
+  const withId = (id, cb) => (...args) => cb.apply(null, [id, ...args])
+
+  const events = [
+    updateFlowName,
+    addCheckable,
+    deleteCheckable,
+    moveCheckable,
+  ].reduce((acc, el) => ({
+    ...acc,
+    [el.name]: withId(id, el)
+  }), {})
 
   return (
     <div className="FlowPage">
-      <button onClick={createBlock}>Create</button>
-      <Flow blocks={blocks}></Flow>
+      {id !== 'not-found' ? (
+        <Flow
+          {...flow}
+          events={events}
+        ></Flow>
+      ) : (
+        <div>Flow not found</div>
+      )}
     </div>
   )
 }

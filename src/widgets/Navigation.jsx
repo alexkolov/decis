@@ -4,7 +4,7 @@ function Link(props) {
   return (
     <NavLink
       activeStyle={{
-        color: 'red',
+        color: 'darkMagenta',
       }}
       className="font-bold"
       {...props}
@@ -16,7 +16,7 @@ function Link(props) {
 
 export default function Navigation() {
   return (
-    <nav className="p-3 bg-gray-300">
+    <nav className="p-3 bg-gray-400">
       <ul className="flex flex-row">
         <li className="pr-5">
           <Link to="/" exact>

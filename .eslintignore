@@ -1,1 +1,3 @@
 src/models
+.vscode/
+.eslintcache

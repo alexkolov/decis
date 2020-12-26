@@ -1,0 +1,15 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-decis-staging-102128-authRole",
+      "UnauthRoleArn": "arn:aws:iam::838213659297:role/amplify-decis-staging-102128-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::838213659297:role/amplify-decis-staging-102128-authRole",
+      "Region": "eu-central-1",
+      "DeploymentBucketName": "amplify-decis-staging-102128-deployment",
+      "UnauthRoleName": "amplify-decis-staging-102128-unauthRole",
+      "StackName": "amplify-decis-staging-102128",
+      "StackId": "arn:aws:cloudformation:eu-central-1:838213659297:stack/amplify-decis-staging-102128/c960d560-45d1-11eb-8b9c-0650cf2e5c10",
+      "AmplifyAppId": "d1kygebpzjo9fa"
+    }
+  }
+}
