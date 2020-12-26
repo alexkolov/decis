@@ -1,5 +1,9 @@
 export function noop() {}
 
+export function partial(fn, ...args) {
+  return (..._args) => fn.apply(null, [...args, ..._args])
+}
+
 export function withPrompt(
   question,
   defaultAnswer = '',

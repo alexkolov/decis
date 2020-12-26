@@ -9,11 +9,10 @@ const BlockType = {
   "CHECKABLE": "CHECKABLE"
 };
 
-const { Flow, FlowCheckable, Checkable, Block } = initSchema(schema);
+const { Flow, Checkable, Block } = initSchema(schema);
 
 export {
   Flow,
-  FlowCheckable,
   Checkable,
   Block,
   BlockType

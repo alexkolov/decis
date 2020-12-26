@@ -1,30 +1,32 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { withPrompt } from '../utils/core'
+import { partial, withPrompt } from '../utils/core'
 import * as Api from '../api/flow'
 import { Card, Title } from '../widgets/Card'
 
-/*
-function Block({ id, type, name }, idx) {
-  const inner =
-    id !== 'empty' ? (
-      <div className="Block">
-        <div>#{idx + 1}</div>
-        <div>{type}</div>
-        <div>{name}</div>
-      </div>
-    ) : (
-      'Empty'
-    )
-  return <div key={id}>{inner}</div>
+async function updateFlowName(id, callback, name) {
+  await Api.updateFlowName(id, name)
+  callback.call()
 }
-*/
 
-// const entries = blocks.length ? blocks : [{ id: 'empty' }]
-// <div className="p-2">{entries.map((el, idx) => Block(el, idx))}</div>
+async function addCheckable(flowId, callback, text) {
+  console.log('addCheckable')
+  console.log('flowId', flowId)
+  console.log('text', text)
+  const result = await Api.createCheckable(flowId, text)
+  console.log('result', result)
+  callback.call(null)
+}
+
+function deleteCheckable(flowId, checkableId) {
+  console.log('deleteCheckable')
+}
+
+function moveCheckable(flowId, checkableId, direction) {
+  console.log('moveCheckable')
+}
 
 function BlockControls(events) {
-  console.log('events.addCheckable', events.addCheckable)
   const Button = (props) => {
     return (
       <button
@@ -39,7 +41,9 @@ function BlockControls(events) {
 
   return (
     <div>
-      <Button onClick={events.addCheckable}>Add</Button>
+      <Button onClick={withPrompt('Text', '', undefined, events.addCheckable)}>
+        Add
+      </Button>
       <Button>Del</Button>
       <Button>Up</Button>
       <Button>Down</Button>
@@ -47,83 +51,116 @@ function BlockControls(events) {
   )
 }
 
-function Block({ id, name }, events) {
+function Block({ id, text }, events) {
   return (
     <div key={id} className="flex justify-between">
-      <div className="flex items-center">{name}</div>
-      <BlockControls {...events}/>
+      <div className="flex items-center">{text}</div>
+      <BlockControls {...events} />
     </div>
   )
 }
 
-const emptyBlocks = [{ id: 'empty-block', name: 'Empty' }]
-
-function Flow({ name, blocks = emptyBlocks, events }) {
+function Flow({ flow, blocks, events }) {
   return (
     <div className="Flow mt-5 mx-2">
       <Card>
-        <Title
-          onDoubleClick={withPrompt(
-            'Change name?',
-            name,
-            undefined,
-            events.updateFlowName,
-            () => alert('Name can not be empty!')
-          )}
-        >
-          {name}
-        </Title>
-        <div className="blocks p-2">
-          {blocks.map((el) => Block(el, events))}
-        </div>
+        {flow ? (
+          <>
+            <Title
+              onDoubleClick={withPrompt(
+                'Change name?',
+                flow.name,
+                undefined,
+                events.updateFlowName,
+                () => alert('Name can not be empty!')
+              )}
+            >
+              {flow.name}
+            </Title>
+
+            <div className="blocks p-2">
+              {blocks.map((el) => Block(el, events))}
+            </div>
+          </>
+        ) : (
+          <Title>Loading...</Title>
+        )}
       </Card>
     </div>
   )
 }
 
-async function updateFlowName(id, name) {
-  console.log('updateFlowName', name)
-  const result = await Api.updateFlowName(id, name)
-  console.log(result)
-}
-
-function addCheckable(flowId, checkable) {
-  console.log('addCheckable')
-}
-
-function deleteCheckable(flowId, checkableId) {
-  console.log('deleteCheckable')
-}
-
-function moveCheckable(flowId, checkableId, direction) {
-  console.log('moveCheckable')
-}
-
 export default function Page() {
-  const [flow, setFlow] = useState(null)
-
   let { id } = useParams()
+
+  const initialMeta = {
+    flow: { isLoading: false, isOutdated: true },
+    blocks: { isLoading: false, isOutdated: true },
+  }
+
+  const initialBlocks = [{ id: 'empty-block', name: 'Empty' }]
+
+  const [meta, setMeta] = useState(initialMeta)
+  const [flow, setFlow] = useState(null)
+  const [blocks, setBlocks] = useState(initialBlocks)
+
+  const updateMeta = (previous, type, property, value) => {
+    const current = { ...previous }
+    current[type][property] = value
+    return current
+  }
 
   useEffect(() => {
     const loadFlow = async () => {
+      setMeta((previous) => {
+        return updateMeta(previous, 'flow', 'isLoading', true)
+      })
       const result = await Api.readFlow(id)
-      console.log('result', result)
+      console.log('flows', result)
       setFlow(result)
+      setMeta((previous) => {
+        let current = updateMeta(previous, 'flow', 'isOutdated', false)
+        return updateMeta(current, 'flow', 'isLoading', false)
+      })
     }
-    loadFlow()
-  }, [id])
 
-  const withId = (id, cb) => (...args) => cb.apply(null, [id, ...args])
+    const loadBlocks = async () => {
+      setMeta((previous) => {
+        return updateMeta(previous, 'blocks', 'isLoading', true)
+      })
+      const result = await Api.queryCheckables(id)
+      console.log('blocks', result)
+      setBlocks(result)
+      setMeta((previous) => {
+        let current = updateMeta(previous, 'blocks', 'isOutdated', false)
+        return updateMeta(current, 'blocks', 'isLoading', false)
+      })
+    }
+
+    if (meta.flow.isOutdated && !meta.flow.isLoading) {
+      loadFlow()
+    }
+
+    if (meta.blocks.isOutdated && !meta.blocks.isLoading) {
+      loadBlocks()
+    }
+  }, [id, meta])
+
+  const setIsOutdated = (type) => {
+    setMeta((previous) => {
+      return updateMeta(previous, type, 'isOutdated', true)
+    })
+  }
 
   const events = [
-    updateFlowName,
-    addCheckable,
-    deleteCheckable,
-    moveCheckable,
+    [updateFlowName, 'flow'],
+    [addCheckable, 'blocks'],
+    [deleteCheckable, 'blocks'],
+    [moveCheckable, 'blocks'],
   ].reduce(
-    (acc, el) => ({
+    (acc, [fn, type]) => ({
       ...acc,
-      [el.name]: withId(id, el),
+      [fn.name]: partial(fn, id, partial(setIsOutdated, type)),
     }),
     {}
   )
@@ -131,7 +168,7 @@ export default function Page() {
   return (
     <div className="FlowPage">
       {id !== 'not-found' ? (
-        <Flow {...flow} events={events}></Flow>
+        <Flow flow={flow} blocks={blocks} events={events}></Flow>
       ) : (
         <div>Flow not found</div>
       )}

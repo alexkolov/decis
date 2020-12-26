@@ -1,13 +1,13 @@
 type Flow @model @auth(rules: [{allow: public}]) {
   id: ID!
   name: String
-  FlowCheckables: [FlowCheckable] @connection(keyName: "byFlow", fields: ["id"])
+  Checkables: [Checkable] @connection(keyName: "byFlow", fields: ["id"])
 }
 
-type Checkable @model @auth(rules: [{allow: public}]) {
+type Checkable @model @auth(rules: [{allow: public}]) @key(name: "byFlow", fields: ["flowID"]) {
   id: ID!
   text: String
-  flows: [FlowCheckable] @connection(keyName: "byCheckable", fields: ["id"])
+  flowID: ID!
 }
 
 enum BlockType {
@@ -21,13 +21,5 @@ type Block @model @auth(rules: [{allow: public}]) {
   id: ID!
   type: BlockType!
   name: String!
-}
-
-type FlowCheckable @model(queries: null) @key(name: "byFlow", fields: ["flowID", "checkableID"]) @key(name: "byCheckable", fields: ["checkableID", "flowID"]) @auth(rules: [{allow: public}, {allow: public}]) {
-  id: ID!
-  flowID: ID!
-  checkableID: ID!
-  flow: Flow! @connection(fields: ["flowID"])
-  checkable: Checkable! @connection(fields: ["checkableID"])
 }
  

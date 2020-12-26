@@ -17,18 +17,18 @@ export const schema = {
                     "isRequired": false,
                     "attributes": []
                 },
-                "FlowCheckables": {
-                    "name": "FlowCheckables",
+                "Checkables": {
+                    "name": "Checkables",
                     "isArray": true,
                     "type": {
-                        "model": "FlowCheckable"
+                        "model": "Checkable"
                     },
                     "isRequired": false,
                     "attributes": [],
                     "isArrayNullable": true,
                     "association": {
                         "connectionType": "HAS_MANY",
-                        "associatedWith": "flow"
+                        "associatedWith": "flowID"
                     }
                 }
             },
@@ -43,99 +43,6 @@ export const schema = {
                     "type": "auth",
                     "properties": {
                         "rules": [
-                            {
-                                "allow": "public",
-                                "operations": [
-                                    "create",
-                                    "update",
-                                    "delete",
-                                    "read"
-                                ]
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        "FlowCheckable": {
-            "name": "FlowCheckable",
-            "fields": {
-                "id": {
-                    "name": "id",
-                    "isArray": false,
-                    "type": "ID",
-                    "isRequired": true,
-                    "attributes": []
-                },
-                "flow": {
-                    "name": "flow",
-                    "isArray": false,
-                    "type": {
-                        "model": "Flow"
-                    },
-                    "isRequired": true,
-                    "attributes": [],
-                    "association": {
-                        "connectionType": "BELONGS_TO",
-                        "targetName": "flowID"
-                    }
-                },
-                "checkable": {
-                    "name": "checkable",
-                    "isArray": false,
-                    "type": {
-                        "model": "Checkable"
-                    },
-                    "isRequired": true,
-                    "attributes": [],
-                    "association": {
-                        "connectionType": "BELONGS_TO",
-                        "targetName": "checkableID"
-                    }
-                }
-            },
-            "syncable": true,
-            "pluralName": "FlowCheckables",
-            "attributes": [
-                {
-                    "type": "model",
-                    "properties": {
-                        "queries": null
-                    }
-                },
-                {
-                    "type": "key",
-                    "properties": {
-                        "name": "byFlow",
-                        "fields": [
-                            "flowID",
-                            "checkableID"
-                        ]
-                    }
-                },
-                {
-                    "type": "key",
-                    "properties": {
-                        "name": "byCheckable",
-                        "fields": [
-                            "checkableID",
-                            "flowID"
-                        ]
-                    }
-                },
-                {
-                    "type": "auth",
-                    "properties": {
-                        "rules": [
-                            {
-                                "allow": "public",
-                                "operations": [
-                                    "create",
-                                    "update",
-                                    "delete",
-                                    "read"
-                                ]
-                            },
                             {
                                 "allow": "public",
                                 "operations": [
@@ -167,19 +74,12 @@ export const schema = {
                     "isRequired": false,
                     "attributes": []
                 },
-                "flows": {
-                    "name": "flows",
-                    "isArray": true,
-                    "type": {
-                        "model": "FlowCheckable"
-                    },
-                    "isRequired": false,
-                    "attributes": [],
-                    "isArrayNullable": true,
-                    "association": {
-                        "connectionType": "HAS_MANY",
-                        "associatedWith": "checkable"
-                    }
+                "flowID": {
+                    "name": "flowID",
+                    "isArray": false,
+                    "type": "ID",
+                    "isRequired": true,
+                    "attributes": []
                 }
             },
             "syncable": true,
@@ -188,6 +88,15 @@ export const schema = {
                 {
                     "type": "model",
                     "properties": {}
+                },
+                {
+                    "type": "key",
+                    "properties": {
+                        "name": "byFlow",
+                        "fields": [
+                            "flowID"
+                        ]
+                    }
                 },
                 {
                     "type": "auth",
@@ -272,5 +181,5 @@ export const schema = {
         }
     },
     "nonModels": {},
-    "version": "494878430c29950dde2aaead8aff03cc"
+    "version": "ff51b3c765f38144d3a38f44c1d40c04"
 };
