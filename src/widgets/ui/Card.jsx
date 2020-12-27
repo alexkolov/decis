@@ -4,7 +4,7 @@ export function Card({ children }) {
 
 export function Title(props) {
   return (
-    <h2 className="p-2 bg-gray-300 font-bold rounded-sm cursor-pointer select-none" {...props }>
+    <h2 className="flex p-2 bg-gray-300 font-bold rounded-sm cursor-pointer select-none" {...props }>
       {props.children}
     </h2>
   )

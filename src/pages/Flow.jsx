@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { partial, withPrompt } from '../utils/core'
 import * as Api from '../api/flow'
-import { Card, Title } from '../widgets/Card'
+import { Card, Title } from '../widgets/ui/Card'
+import { PencilSmall } from '../widgets/icons/Pencil'
+import './Flow.css'
 
 async function updateFlowName(id, callback, name) {
   await Api.updateFlowName(id, name)
@@ -27,33 +29,26 @@ function moveCheckable(flowId, checkableId, direction) {
 }
 
 async function blockEventContainer(flowId, stateUpdateFn, eventFn) {
-  console.log('blockEventContainer', flowId)
-  console.log('eventFn', eventFn)
-  const result = (await eventFn).call(null)
-  console.log('eventFn result', result)
-  // stateUpdateFn.call(null)
+  await eventFn.call()
+  stateUpdateFn.call()
 }
 
 function Checkable({ block, events }) {
-  console.log('Checkable block', block)
-
-  const update = async (id, value) => {
-    return () => {
-      console.log('update:', id, value)
-      return 'working'
-    }
+  const update = (id, value) => {
+    return () => Api.setCheckableIsChecked(id, value)
   }
 
   const Checkbox = ({ id, isChecked, eventContainer }) => (
     <input
       checked={isChecked}
-      onChange={() => eventContainer(update(id, isChecked))}
+      onChange={() => eventContainer(update(id, !isChecked))}
+      className="mr-2"
       type="checkbox"
     />
   )
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="Checkable flex items-center justify-between">
       {block.id !== 'empty-block' ? (
         <Checkbox
           id={block.id}
@@ -62,7 +57,9 @@ function Checkable({ block, events }) {
         />
       ) : null}
 
-      {block.text}
+      <div className={'Text ' + (block.isChecked ? 'checked' : '')}>
+        {block.text}
+      </div>
     </div>
   )
 }
@@ -108,6 +105,19 @@ function Block(block, events) {
 }
 
 function Flow({ flow, blocks, events }) {
+  const Counter = () => {
+    if (blocks[0].id === 'empty-block') {
+      return null
+    }
+    const allBlocks = blocks.length
+    const checkedBlocks = blocks.filter((el) => el.isChecked).length
+    return (
+      <div className="ml-1 font-normal">
+        [{checkedBlocks + '/' + allBlocks}]
+      </div>
+    )
+  }
+
   return (
     <div className="Flow mt-5 mx-2">
       <Card>
@@ -123,6 +133,7 @@ function Flow({ flow, blocks, events }) {
               )}
             >
               {flow.name}
+              <Counter />
             </Title>
 
             <div className="blocks p-2">

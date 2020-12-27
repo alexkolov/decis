@@ -1,33 +1,12 @@
 import { useState, useEffect } from 'react'
 import * as Api from '../api/flow'
-import { Link } from 'react-router-dom'
-import { Card, Title } from '../widgets/Card'
-
-function Flow({ id, name }) {
-  const path = `/flow/${id}`
-
-  return (
-    <div key={id}>
-      <Link to={path}>{name}</Link>
-    </div>
-  )
-}
-
-function List({ flows }) {
-  return (
-    <div className="FlowList mt-5 mx-2">
-      <Card>
-        <Title>Flows</Title>
-        <div className="p-2">{flows.map((el) => Flow(el))}</div>
-      </Card>
-    </div>
-  )
-}
+import { Card, Title } from '../widgets/ui/Card'
+import { FlowList } from '../widgets/ui/FlowList'
 
 function CreateFlowButton({ onClick }) {
   const withPrompt = (cb) => {
     return () => {
-      const input = prompt('Name of the Flow?', '');
+      const input = prompt('Name of the Flow?', '')
       const isCanceled = input === null
       if (isCanceled) {
         return
@@ -50,6 +29,17 @@ function CreateFlowButton({ onClick }) {
   )
 }
 
+function FlowListWidget({flows}) {
+  return (
+    <div className="FlowList mt-5 mx-2">
+      <Card>
+        <Title>Flows</Title>
+        <FlowList flows={flows} />
+      </Card>
+    </div>
+  )
+}
+
 export default function Page() {
   const [flows, setFlows] = useState([])
   const [isOutdated, setIsOutdated] = useState(true)
@@ -57,7 +47,7 @@ export default function Page() {
   useEffect(() => {
     const queryFlows = async () => {
       const result = await Api.queryFlows()
-      console.log('api load result:', result)
+      console.log('flows:', result)
       setFlows(result)
       setIsOutdated(false)
     }
@@ -75,7 +65,7 @@ export default function Page() {
 
   return (
     <div className="FlowListPage">
-      <List flows={flows} />
+      <FlowListWidget flows={flows} />
       <CreateFlowButton onClick={createFlow} />
     </div>
   )

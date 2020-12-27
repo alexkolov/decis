@@ -1,10 +1,10 @@
-import { Card, Title } from './Card'
+import {Card, Title} from '../ui/Card'
 
 export default function Widget({ className }) {
   return (
-    <div className={'NextWidget ' + className}>
+    <div className={'StatsWidget ' + className}>
       <Card>
-        <Title>Next</Title>
+        <Title>Statistics</Title>
         <div className="p-2">Content</div>
       </Card>
     </div>
