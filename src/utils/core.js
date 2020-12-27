@@ -1,4 +1,6 @@
-export function noop() {}
+export function noop() {
+  return { status: 'noop' }
+}
 
 export function partial(fn, ...args) {
   return (..._args) => fn.apply(null, [...args, ..._args])

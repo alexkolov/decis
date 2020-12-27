@@ -11,12 +11,18 @@ export function readFlow(id) {
   return DataStore.query(Flow, id)
 }
 
-export async function updateFlowName(id, name) {
+export async function setFlowName(id, name) {
   const oldFlow = await DataStore.query(Flow, id)
   const newFlow = Flow.copyOf(oldFlow, (updated) => {
     updated.name = name
   })
-  return await DataStore.save(newFlow)
+
+  try {
+    const result = await DataStore.save(newFlow)
+    return { status: 'success', payload: result }
+  } catch (error) {
+    return { status: 'error', payload: error }
+  }
 }
 
 export function queryFlows() {
@@ -31,6 +37,7 @@ export async function loadNextFlows() {
 }
 
 // BLOCKS
+// -> own namespace, Checkables
 export async function createCheckable(flowId, isChecked, text) {
   const flow = await readFlow(flowId)
   console.log('flow', flow)
@@ -40,11 +47,32 @@ export async function createCheckable(flowId, isChecked, text) {
 
 export async function setCheckableIsChecked(id, value) {
   const oldState = await DataStore.query(Checkable, id)
-  const newState = Flow.copyOf(oldState, (updated) => {
+  const newState = Checkable.copyOf(oldState, (updated) => {
     updated.isChecked = value
   })
-  return await DataStore.save(newState)
+
+  try {
+    const result = await DataStore.save(newState)
+    return { status: 'success', payload: result }
+  } catch (error) {
+    return { status: 'error', payload: error }
+  }
 }
+
+export async function setCheckableText(id, text) {
+  const oldState = await DataStore.query(Checkable, id)
+  const newState = Checkable.copyOf(oldState, (updated) => {
+    updated.text = text
+  })
+
+  try {
+    const result = await DataStore.save(newState)
+    return { status: 'success', payload: result }
+  } catch (error) {
+    return { status: 'error', payload: error }
+  }
+}
+
 
 export async function queryCheckables(flowId) {
   return (await DataStore.query(Checkable)).filter((el) => el.flowID === flowId)

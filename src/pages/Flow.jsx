@@ -6,9 +6,9 @@ import { Card, Title } from '../widgets/ui/Card'
 import { PencilSmall } from '../widgets/icons/Pencil'
 import './Flow.css'
 
-async function updateFlowName(id, callback, name) {
-  await Api.updateFlowName(id, name)
-  callback.call()
+async function setFlowName(id, stateUpdateFn, name) {
+  const result = await Api.setFlowName(id, name)
+  stateUpdateFn.call(null, result)
 }
 
 async function addCheckable(flowId, stateUpdateFn, text) {
@@ -29,19 +29,29 @@ function moveCheckable(flowId, checkableId, direction) {
 }
 
 async function blockEventContainer(flowId, stateUpdateFn, eventFn) {
-  await eventFn.call()
-  stateUpdateFn.call()
+  const result = await eventFn.call()
+  console.log('result', result)
+  stateUpdateFn.call(null, result)
 }
 
 function Checkable({ block, events }) {
-  const update = (id, value) => {
-    return () => Api.setCheckableIsChecked(id, value)
+  const updateIsChecked = (value) => {
+    return () => Api.setCheckableIsChecked(block.id, value)
   }
+
+  const setText = () =>
+    withPrompt(
+      'Text',
+      block.text,
+      undefined,
+      partial(Api.setCheckableText, block.id),
+      () => alert('Text can not be empty!')
+    )
 
   const Checkbox = ({ id, isChecked, eventContainer }) => (
     <input
       checked={isChecked}
-      onChange={() => eventContainer(update(id, !isChecked))}
+      onChange={() => eventContainer(updateIsChecked(!isChecked))}
       className="mr-2"
       type="checkbox"
     />
@@ -57,8 +67,14 @@ function Checkable({ block, events }) {
         />
       ) : null}
 
-      <div className={'Text ' + (block.isChecked ? 'checked' : '')}>
-        {block.text}
+      <div className="flex items-center">
+        <div className={'Text mr-1 ' + (block.isChecked ? 'checked' : '')}>
+          {block.text}
+        </div>
+        <PencilSmall
+          onClick={() => events.blockEventContainer(setText())}
+          className="h-4 w-4 cursor-pointer"
+        />
       </div>
     </div>
   )
@@ -128,7 +144,7 @@ function Flow({ flow, blocks, events }) {
                 'Change name?',
                 flow.name,
                 undefined,
-                events.updateFlowName,
+                events.setFlowName,
                 () => alert('Name can not be empty!')
               )}
             >
@@ -149,13 +165,16 @@ function Flow({ flow, blocks, events }) {
 }
 
 export default function Page() {
+  // CORE
   let { id } = useParams()
 
+  // STATES
   const initialMeta = {
     flow: { isLoading: false, isOutdated: true },
     blocks: { isLoading: false, isOutdated: true },
   }
 
+  // resetBlocks(setBlocks(initialBlocks))
   const initialBlocks = useMemo(
     () => [{ id: 'empty-block', isChecked: false, text: 'Empty Flow' }],
     []
@@ -171,6 +190,7 @@ export default function Page() {
     return current
   }
 
+  // EFFECTS
   useEffect(() => {
     const loadFlow = async () => {
       setMeta((previous) => {
@@ -208,17 +228,21 @@ export default function Page() {
     }
   }, [id, meta, initialBlocks])
 
-  const setIsOutdated = (type) => {
+  // EVENTS
+  const setIsOutdated = (type, result) => {
+    if (result.status === 'noop') {
+      return
+    }
     setMeta((previous) => {
       return updateMeta(previous, type, 'isOutdated', true)
     })
   }
 
   const events = [
-    [updateFlowName, 'flow'],
-    [addCheckable, 'blocks'],
-    [deleteCheckable, 'blocks'],
-    [moveCheckable, 'blocks'],
+    [setFlowName, 'flow'], // -> flowEventContainer
+    [addCheckable, 'blocks'], // deprecated?
+    [deleteCheckable, 'blocks'], // deprecated?
+    [moveCheckable, 'blocks'], // deprecated?
     [blockEventContainer, 'blocks'],
   ].reduce(
     (acc, [fn, type]) => ({
