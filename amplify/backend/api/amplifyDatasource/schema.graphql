@@ -8,6 +8,7 @@ type Checkable @model @auth(rules: [{allow: public}]) @key(name: "byFlow", field
   id: ID!
   text: String
   flowID: ID!
+  isChecked: Boolean!
 }
 
 enum BlockType {

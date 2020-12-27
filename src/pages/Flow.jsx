@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { partial, withPrompt } from '../utils/core'
 import * as Api from '../api/flow'
@@ -9,13 +9,13 @@ async function updateFlowName(id, callback, name) {
   callback.call()
 }
 
-async function addCheckable(flowId, callback, text) {
+async function addCheckable(flowId, stateUpdateFn, text) {
   console.log('addCheckable')
   console.log('flowId', flowId)
   console.log('text', text)
-  const result = await Api.createCheckable(flowId, text)
+  const result = await Api.createCheckable(flowId, false, text)
   console.log('result', result)
-  callback.call(null)
+  stateUpdateFn.call(null)
 }
 
 function deleteCheckable(flowId, checkableId) {
@@ -24,6 +24,47 @@ function deleteCheckable(flowId, checkableId) {
 
 function moveCheckable(flowId, checkableId, direction) {
   console.log('moveCheckable')
+}
+
+async function blockEventContainer(flowId, stateUpdateFn, eventFn) {
+  console.log('blockEventContainer', flowId)
+  console.log('eventFn', eventFn)
+  const result = (await eventFn).call(null)
+  console.log('eventFn result', result)
+  // stateUpdateFn.call(null)
+}
+
+function Checkable({ block, events }) {
+  console.log('Checkable block', block)
+
+  const update = async (id, value) => {
+    return () => {
+      console.log('update:', id, value)
+      return 'working'
+    }
+  }
+
+  const Checkbox = ({ id, isChecked, eventContainer }) => (
+    <input
+      checked={isChecked}
+      onChange={() => eventContainer(update(id, isChecked))}
+      type="checkbox"
+    />
+  )
+
+  return (
+    <div className="flex items-center justify-between">
+      {block.id !== 'empty-block' ? (
+        <Checkbox
+          id={block.id}
+          isChecked={block.isChecked}
+          eventContainer={events.blockEventContainer}
+        />
+      ) : null}
+
+      {block.text}
+    </div>
+  )
 }
 
 function BlockControls(events) {
@@ -39,11 +80,17 @@ function BlockControls(events) {
     )
   }
 
+  const onAddClick = withPrompt(
+    'Text',
+    '',
+    undefined,
+    events.addCheckable,
+    () => alert('Text can not be empty!')
+  )
+
   return (
     <div>
-      <Button onClick={withPrompt('Text', '', undefined, events.addCheckable)}>
-        Add
-      </Button>
+      <Button onClick={onAddClick}>Add</Button>
       <Button>Del</Button>
       <Button>Up</Button>
       <Button>Down</Button>
@@ -51,10 +98,10 @@ function BlockControls(events) {
   )
 }
 
-function Block({ id, text }, events) {
+function Block(block, events) {
   return (
-    <div key={id} className="flex justify-between">
-      <div className="flex items-center">{text}</div>
+    <div key={block.id} className="flex justify-between">
+      <Checkable block={block} events={events} />
       <BlockControls {...events} />
     </div>
   )
@@ -98,7 +145,10 @@ export default function Page() {
     blocks: { isLoading: false, isOutdated: true },
   }
 
-  const initialBlocks = [{ id: 'empty-block', name: 'Empty' }]
+  const initialBlocks = useMemo(
+    () => [{ id: 'empty-block', isChecked: false, text: 'Empty Flow' }],
+    []
+  )
 
   const [meta, setMeta] = useState(initialMeta)
   const [flow, setFlow] = useState(null)
@@ -129,8 +179,9 @@ export default function Page() {
         return updateMeta(previous, 'blocks', 'isLoading', true)
       })
       const result = await Api.queryCheckables(id)
-      console.log('blocks', result)
-      setBlocks(result)
+      const blocks = result.length ? result : initialBlocks
+      console.log('blocks', blocks)
+      setBlocks(blocks)
       setMeta((previous) => {
         let current = updateMeta(previous, 'blocks', 'isOutdated', false)
         return updateMeta(current, 'blocks', 'isLoading', false)
@@ -144,7 +195,7 @@ export default function Page() {
     if (meta.blocks.isOutdated && !meta.blocks.isLoading) {
       loadBlocks()
     }
-  }, [id, meta])
+  }, [id, meta, initialBlocks])
 
   const setIsOutdated = (type) => {
     setMeta((previous) => {
@@ -157,6 +208,7 @@ export default function Page() {
     [addCheckable, 'blocks'],
     [deleteCheckable, 'blocks'],
     [moveCheckable, 'blocks'],
+    [blockEventContainer, 'blocks'],
   ].reduce(
     (acc, [fn, type]) => ({
       ...acc,

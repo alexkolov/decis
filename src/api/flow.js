@@ -25,10 +25,10 @@ export function queryFlows() {
 }
 
 // BLOCKS
-export async function createCheckable(flowId, text) {
+export async function createCheckable(flowId, isChecked, text) {
   const flow = await readFlow(flowId)
   console.log('flow', flow)
-  const checkable = new Checkable({ flowID: flow.id, text })
+  const checkable = new Checkable({ flowID: flow.id, text , isChecked})
   return DataStore.save(checkable)
 }
 

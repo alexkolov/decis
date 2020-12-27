@@ -21,6 +21,7 @@ export declare class Checkable {
   readonly id: string;
   readonly text?: string;
   readonly flowID: string;
+  readonly isChecked: boolean;
   constructor(init: ModelInit<Checkable>);
   static copyOf(source: Checkable, mutator: (draft: MutableModel<Checkable>) => MutableModel<Checkable> | void): Checkable;
 }

@@ -80,6 +80,13 @@ export const schema = {
                     "type": "ID",
                     "isRequired": true,
                     "attributes": []
+                },
+                "isChecked": {
+                    "name": "isChecked",
+                    "isArray": false,
+                    "type": "Boolean",
+                    "isRequired": true,
+                    "attributes": []
                 }
             },
             "syncable": true,
@@ -181,5 +188,5 @@ export const schema = {
         }
     },
     "nonModels": {},
-    "version": "ff51b3c765f38144d3a38f44c1d40c04"
+    "version": "dddc531e1e52f09739bc247b6ffff157"
 };
