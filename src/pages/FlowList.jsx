@@ -1,27 +1,20 @@
 import { useState, useEffect } from 'react'
+import { withPrompt } from '../utils/core'
 import * as Api from '../api/flow'
 import { Card, Title } from '../widgets/ui/Card'
 import { FlowList } from '../widgets/ui/FlowList'
 
 function CreateFlowButton({ onClick }) {
-  const withPrompt = (cb) => {
-    return () => {
-      const input = prompt('Name of the Flow?', '')
-      const isCanceled = input === null
-      if (isCanceled) {
-        return
-      }
-      if (input) {
-        cb.call(null, input)
-      } else {
-        alert('Name can not be empty!')
-      }
-    }
-  }
+  const createFlow = withPrompt(
+    'Name of the Flow?',
+    '',
+    onClick,
+    () => alert('Name can not be empty!')
+  )
 
   return (
     <button
-      onClick={withPrompt(onClick)}
+      onClick={createFlow}
       className="fixed bottom-3 right-3 flex items-center justify-center h-10 w-10 rounded-full bg-red-500 font-bold text-lg focus:outline-none"
     >
       +

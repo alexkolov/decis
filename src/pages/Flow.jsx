@@ -1,35 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { partial, withPrompt } from '../utils/core'
+import { partial, asNoopFn, withConfirm, withPrompt } from '../utils/core'
 import * as Api from '../api/flow'
 import { Card, Title } from '../widgets/ui/Card'
 import { PencilSmall } from '../widgets/icons/Pencil'
 import './Flow.css'
 
+// TODO: just one EventContainer
 async function setFlowName(id, stateUpdateFn, name) {
   const result = await Api.setFlowName(id, name)
   stateUpdateFn.call(null, result)
 }
 
-async function addCheckable(flowId, stateUpdateFn, text) {
-  console.log('addCheckable')
-  console.log('flowId', flowId)
-  console.log('text', text)
-  const result = await Api.createCheckable(flowId, false, text)
-  console.log('result', result)
-  stateUpdateFn.call(null)
-}
-
-function deleteCheckable(flowId, checkableId) {
-  console.log('deleteCheckable')
-}
-
-function moveCheckable(flowId, checkableId, direction) {
-  console.log('moveCheckable')
-}
-
-async function blockEventContainer(flowId, stateUpdateFn, eventFn) {
-  const result = await eventFn.call()
+// TODO: flowId -> context, stateUpdateFn als teil des context
+// TODO: just event container?
+async function blockEventContainer(
+  context,
+  stateUpdateFn,
+  eventFn,
+  stateUpdateFnArgs
+) {
+  const result = await eventFn.call(null, { flowId: context })
   console.log('result', result)
   stateUpdateFn.call(null, result)
 }
@@ -39,19 +30,18 @@ function Checkable({ block, events }) {
     return () => Api.setCheckableIsChecked(block.id, value)
   }
 
-  const setText = () =>
-    withPrompt(
-      'Text',
-      block.text,
-      undefined,
-      partial(Api.setCheckableText, block.id),
-      () => alert('Text can not be empty!')
-    )
+  const setText = withPrompt(
+    'Text',
+    block.text,
+    partial(Api.setCheckableText, block.id),
+    undefined,
+    () => alert('Text can not be empty!')
+  )
 
   const Checkbox = ({ id, isChecked, eventContainer }) => (
     <input
       checked={isChecked}
-      onChange={() => eventContainer(updateIsChecked(!isChecked))}
+      onChange={() => eventContainer(updateIsChecked(!isChecked), 'blocks')}
       className="mr-2"
       type="checkbox"
     />
@@ -72,7 +62,7 @@ function Checkable({ block, events }) {
           {block.text}
         </div>
         <PencilSmall
-          onClick={() => events.blockEventContainer(setText())}
+          onClick={() => events.blockEventContainer(setText)}
           className="h-4 w-4 cursor-pointer"
         />
       </div>
@@ -80,7 +70,7 @@ function Checkable({ block, events }) {
   )
 }
 
-function BlockControls(events) {
+function BlockControls({ block, events }) {
   const Button = (props) => {
     return (
       <button
@@ -93,18 +83,27 @@ function BlockControls(events) {
     )
   }
 
-  const onAddClick = withPrompt(
-    'Text',
-    '',
-    undefined,
-    events.addCheckable,
-    () => alert('Text can not be empty!')
+  const onAddClick = ({ flowId }) =>
+    withPrompt(
+      'Text',
+      '',
+      partial(Api.createCheckable, flowId, false),
+      undefined,
+      asNoopFn(alert, 'Text can not be empty!')
+    ).call()
+
+  const onDeleteClick = withConfirm('Really delete?', () =>
+    Api.deleteCheckable(block.id)
   )
 
   return (
     <div>
-      <Button onClick={onAddClick}>Add</Button>
-      <Button>Del</Button>
+      <Button onClick={() => events.blockEventContainer(onAddClick)}>
+        Add
+      </Button>
+      <Button onClick={() => events.blockEventContainer(onDeleteClick)}>
+        Del
+      </Button>
       <Button>Up</Button>
       <Button>Down</Button>
     </div>
@@ -115,7 +114,7 @@ function Block(block, events) {
   return (
     <div key={block.id} className="flex justify-between">
       <Checkable block={block} events={events} />
-      <BlockControls {...events} />
+      <BlockControls block={block} events={events} />
     </div>
   )
 }
@@ -143,8 +142,8 @@ function Flow({ flow, blocks, events }) {
               onDoubleClick={withPrompt(
                 'Change name?',
                 flow.name,
-                undefined,
                 events.setFlowName,
+                undefined,
                 () => alert('Name can not be empty!')
               )}
             >
@@ -174,7 +173,7 @@ export default function Page() {
     blocks: { isLoading: false, isOutdated: true },
   }
 
-  // resetBlocks(setBlocks(initialBlocks))
+  // TODO resetBlocks(setBlocks(initialBlocks))
   const initialBlocks = useMemo(
     () => [{ id: 'empty-block', isChecked: false, text: 'Empty Flow' }],
     []
@@ -240,9 +239,6 @@ export default function Page() {
 
   const events = [
     [setFlowName, 'flow'], // -> flowEventContainer
-    [addCheckable, 'blocks'], // deprecated?
-    [deleteCheckable, 'blocks'], // deprecated?
-    [moveCheckable, 'blocks'], // deprecated?
     [blockEventContainer, 'blocks'],
   ].reduce(
     (acc, [fn, type]) => ({

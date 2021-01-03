@@ -1,30 +1,48 @@
+export function partial(fn, ...args) {
+  return (..._args) => fn.apply(null, [...args, ..._args])
+}
+
 export function noop() {
   return { status: 'noop' }
 }
 
-export function partial(fn, ...args) {
-  return (..._args) => fn.apply(null, [...args, ..._args])
+export function asNoopFn(fn, ...args) {
+  return () => {
+    fn.apply(null, args)
+    return noop()
+  }
+}
+
+export function withConfirm(question, onSuccess = noop, onCancel = noop) {
+  return () => {
+    return window.confirm(question) ? onSuccess.call() : onCancel.call()
+  }
+}
+
+function defaultInputValidator(input) {
+  return !!input
 }
 
 export function withPrompt(
   question,
   defaultAnswer = '',
+  onSuccess = noop,
   onCancel = noop,
-  onInputSuccess = noop,
-  onInputError = noop,
+  onError = noop,
+  inputValidatorFn = defaultInputValidator
 ) {
   return () => {
-    const input = prompt(question, defaultAnswer)
+    const input = window.prompt(question, defaultAnswer)
 
     const isCanceled = input === null
     if (isCanceled) {
-      return onCancel.call(null)
+      return onCancel.call()
     }
 
-    if (input) {
-      return onInputSuccess.call(null, input)
+    if (inputValidatorFn(input)) {
+      return onSuccess.call(null, input)
     } else {
-      return onInputError.call(null)
+      return onError.call()
     }
   }
 }

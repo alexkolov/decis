@@ -1,5 +1,6 @@
 import { DataStore } from '@aws-amplify/datastore'
 import { Flow, Checkable } from '../models'
+import { SuccessResult, ErrorResult } from '../utils/api'
 
 // FLOW
 export function createFlow({ name }) {
@@ -37,12 +38,26 @@ export async function loadNextFlows() {
 }
 
 // BLOCKS
-// -> own namespace, Checkables
+// TODO: -> own namespace, Checkables
 export async function createCheckable(flowId, isChecked, text) {
   const flow = await readFlow(flowId)
   console.log('flow', flow)
   const checkable = new Checkable({ flowID: flow.id, text, isChecked })
   return DataStore.save(checkable)
+}
+
+export function readCheckable(id) {
+  return DataStore.query(Checkable, id)
+}
+
+export async function deleteCheckable(id) {
+  try {
+    const item = await DataStore.query(Checkable, id);
+    const result = DataStore.delete(item);
+    return SuccessResult(result)
+  } catch (error) {
+    return ErrorResult(error)
+  }
 }
 
 export async function setCheckableIsChecked(id, value) {
