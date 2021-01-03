@@ -1,47 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { partial, asNoopFn, withConfirm, withPrompt } from '../utils/core'
-import * as Api from '../api/flow'
+import * as FlowApi from '../api/flow'
+import * as CheckableApi from '../api/checkable'
 import { Card, Title } from '../widgets/ui/Card'
 import { PencilSmall } from '../widgets/icons/Pencil'
 import './Flow.css'
 
-// TODO: just one EventContainer
-async function setFlowName(id, stateUpdateFn, name) {
-  const result = await Api.setFlowName(id, name)
-  stateUpdateFn.call(null, result)
+async function eventContainer(context, callback) {
+  await callback.call(null, context)
 }
 
-// TODO: flowId -> context, stateUpdateFn als teil des context
-// TODO: just event container?
-async function blockEventContainer(
-  context,
-  stateUpdateFn,
-  eventFn,
-  stateUpdateFnArgs
-) {
-  const result = await eventFn.call(null, { flowId: context })
-  console.log('result', result)
-  stateUpdateFn.call(null, result)
-}
-
-function Checkable({ block, events }) {
+function Checkable({ block, eventContainer }) {
   const updateIsChecked = (value) => {
-    return () => Api.setCheckableIsChecked(block.id, value)
+    const fn = async (context) => {
+      const result = await CheckableApi.setCheckableIsChecked(block.id, value)
+      context.stateUpdate('blocks', result)
+    }
+    return () => eventContainer(fn)
+  }
+
+  const onSetTextSuccess = (input) => {
+    const fn = async (context) => {
+      const result = await CheckableApi.setCheckableText(block.id, input)
+      context.stateUpdate('blocks', result)
+    }
+    return eventContainer(fn)
   }
 
   const setText = withPrompt(
     'Text',
     block.text,
-    partial(Api.setCheckableText, block.id),
+    onSetTextSuccess,
     undefined,
     () => alert('Text can not be empty!')
   )
-
-  const Checkbox = ({ id, isChecked, eventContainer }) => (
+  
+  const Checkbox = ({ isChecked }) => (
     <input
       checked={isChecked}
-      onChange={() => eventContainer(updateIsChecked(!isChecked), 'blocks')}
+      onChange={updateIsChecked(!isChecked)}
       className="mr-2"
       type="checkbox"
     />
@@ -53,7 +51,6 @@ function Checkable({ block, events }) {
         <Checkbox
           id={block.id}
           isChecked={block.isChecked}
-          eventContainer={events.blockEventContainer}
         />
       ) : null}
 
@@ -62,7 +59,7 @@ function Checkable({ block, events }) {
           {block.text}
         </div>
         <PencilSmall
-          onClick={() => events.blockEventContainer(setText)}
+          onClick={setText}
           className="h-4 w-4 cursor-pointer"
         />
       </div>
@@ -70,7 +67,8 @@ function Checkable({ block, events }) {
   )
 }
 
-function BlockControls({ block, events }) {
+// TODO refactor eventContainer
+function BlockControls({ block, eventContainer }) {
   const Button = (props) => {
     return (
       <button
@@ -87,21 +85,19 @@ function BlockControls({ block, events }) {
     withPrompt(
       'Text',
       '',
-      partial(Api.createCheckable, flowId, false),
+      partial(CheckableApi.createCheckable, flowId, false),
       undefined,
-      asNoopFn(alert, 'Text can not be empty!')
+      asNoopFn(alert, 'Text can not be empty!') // TODO reomove?
     ).call()
 
   const onDeleteClick = withConfirm('Really delete?', () =>
-    Api.deleteCheckable(block.id)
+    CheckableApi.deleteCheckable(block.id)
   )
 
   return (
     <div>
-      <Button onClick={() => events.blockEventContainer(onAddClick)}>
-        Add
-      </Button>
-      <Button onClick={() => events.blockEventContainer(onDeleteClick)}>
+      <Button onClick={() => eventContainer('blocks', onAddClick)}>Add</Button>
+      <Button onClick={() => eventContainer('blocks', onDeleteClick)}>
         Del
       </Button>
       <Button>Up</Button>
@@ -110,16 +106,16 @@ function BlockControls({ block, events }) {
   )
 }
 
-function Block(block, events) {
+function Block(block, eventContainer) {
   return (
     <div key={block.id} className="flex justify-between">
-      <Checkable block={block} events={events} />
-      <BlockControls block={block} events={events} />
+      <Checkable block={block} eventContainer={eventContainer} />
+      <BlockControls block={block} eventContainer={eventContainer} />
     </div>
   )
 }
 
-function Flow({ flow, blocks, events }) {
+function Flow({ flow, blocks, eventContainer }) {
   const Counter = () => {
     if (blocks[0].id === 'empty-block') {
       return null
@@ -133,18 +129,26 @@ function Flow({ flow, blocks, events }) {
     )
   }
 
+  const onInputFn = (input) => {
+    const fn = async (context) => {
+      const result = await FlowApi.setFlowName(context.flowId, input)
+      context.stateUpdate('flow', result)
+    }
+    return eventContainer(fn)
+  }
+
   return (
     <div className="Flow mt-5 mx-2">
       <Card>
         {flow ? (
           <>
             <Title
-              onDoubleClick={withPrompt(
+              onClick={withPrompt(
                 'Change name?',
                 flow.name,
-                events.setFlowName,
+                onInputFn,
                 undefined,
-                () => alert('Name can not be empty!')
+                asNoopFn(alert, 'Name can not be empty!')
               )}
             >
               {flow.name}
@@ -152,7 +156,7 @@ function Flow({ flow, blocks, events }) {
             </Title>
 
             <div className="blocks p-2">
-              {blocks.map((el) => Block(el, events))}
+              {blocks.map((el) => Block(el, eventContainer))}
             </div>
           </>
         ) : (
@@ -195,7 +199,7 @@ export default function Page() {
       setMeta((previous) => {
         return updateMeta(previous, 'flow', 'isLoading', true)
       })
-      const result = await Api.readFlow(id)
+      const result = await FlowApi.readFlow(id)
       console.log('flows', result)
       setFlow(result)
       setMeta((previous) => {
@@ -208,7 +212,7 @@ export default function Page() {
       setMeta((previous) => {
         return updateMeta(previous, 'blocks', 'isLoading', true)
       })
-      const result = await Api.queryCheckables(id)
+      const result = await CheckableApi.queryCheckables(id)
       const blocks = result.length ? result : initialBlocks
       console.log('blocks', blocks)
       setBlocks(blocks)
@@ -229,6 +233,7 @@ export default function Page() {
 
   // EVENTS
   const setIsOutdated = (type, result) => {
+    console.log('result.status', result.status)
     if (result.status === 'noop') {
       return
     }
@@ -237,21 +242,19 @@ export default function Page() {
     })
   }
 
-  const events = [
-    [setFlowName, 'flow'], // -> flowEventContainer
-    [blockEventContainer, 'blocks'],
-  ].reduce(
-    (acc, [fn, type]) => ({
-      ...acc,
-      [fn.name]: partial(fn, id, partial(setIsOutdated, type)),
-    }),
-    {}
-  )
+  const eventContainerFn = partial(eventContainer, {
+    flowId: id,
+    stateUpdate: setIsOutdated,
+  })
 
   return (
     <div className="FlowPage">
       {id !== 'not-found' ? (
-        <Flow flow={flow} blocks={blocks} events={events}></Flow>
+        <Flow
+          flow={flow}
+          blocks={blocks}
+          eventContainer={eventContainerFn}
+        ></Flow>
       ) : (
         <div>Flow not found</div>
       )}

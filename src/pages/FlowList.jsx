@@ -40,7 +40,6 @@ export default function Page() {
   useEffect(() => {
     const queryFlows = async () => {
       const result = await Api.queryFlows()
-      console.log('flows:', result)
       setFlows(result)
       setIsOutdated(false)
     }
@@ -50,9 +49,7 @@ export default function Page() {
   }, [isOutdated])
 
   const createFlow = async (name) => {
-    console.log('createFlow api:', name)
-    const result = await Api.createFlow({ name })
-    console.log('createFlow result', result)
+    await Api.createFlow({ name })
     setIsOutdated(true)
   }
 
