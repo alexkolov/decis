@@ -4,10 +4,13 @@ import { readFlow } from './flow'
 import { SuccessResult, ErrorResult } from '../utils/api'
 
 export async function createCheckable(flowId, isChecked, text) {
-  const flow = await readFlow(flowId)
-  console.log('flow', flow)
-  const checkable = new Checkable({ flowID: flow.id, text, isChecked })
-  return DataStore.save(checkable)
+  try {
+    const flow = await readFlow(flowId)
+    const checkable = new Checkable({ flowID: flow.id, text, isChecked })
+    return SuccessResult(DataStore.save(checkable))
+  } catch (error) {
+    return ErrorResult(error)
+  }
 }
 
 export function readCheckable(id) {

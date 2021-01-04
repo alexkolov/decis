@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { partial, asNoopFn, withConfirm, withPrompt } from '../utils/core'
+import { withConfirm, withPrompt } from '../utils/core'
 import * as FlowApi from '../api/flow'
 import * as CheckableApi from '../api/checkable'
 import { Card, Title } from '../widgets/ui/Card'
 import { PencilSmall } from '../widgets/icons/Pencil'
 import './Flow.css'
-
-async function eventContainer(context, callback) {
-  await callback.call(null, context)
-}
 
 function Checkable({ block, eventContainer }) {
   const updateIsChecked = (value) => {
@@ -35,7 +31,7 @@ function Checkable({ block, eventContainer }) {
     undefined,
     () => alert('Text can not be empty!')
   )
-  
+
   const Checkbox = ({ isChecked }) => (
     <input
       checked={isChecked}
@@ -48,26 +44,19 @@ function Checkable({ block, eventContainer }) {
   return (
     <div className="Checkable flex items-center justify-between">
       {block.id !== 'empty-block' ? (
-        <Checkbox
-          id={block.id}
-          isChecked={block.isChecked}
-        />
+        <Checkbox id={block.id} isChecked={block.isChecked} />
       ) : null}
 
       <div className="flex items-center">
         <div className={'Text mr-1 ' + (block.isChecked ? 'checked' : '')}>
           {block.text}
         </div>
-        <PencilSmall
-          onClick={setText}
-          className="h-4 w-4 cursor-pointer"
-        />
+        <PencilSmall onClick={setText} className="h-4 w-4 cursor-pointer" />
       </div>
     </div>
   )
 }
 
-// TODO refactor eventContainer
 function BlockControls({ block, eventContainer }) {
   const Button = (props) => {
     return (
@@ -81,25 +70,40 @@ function BlockControls({ block, eventContainer }) {
     )
   }
 
-  const onAddClick = ({ flowId }) =>
-    withPrompt(
-      'Text',
-      '',
-      partial(CheckableApi.createCheckable, flowId, false),
-      undefined,
-      asNoopFn(alert, 'Text can not be empty!') // TODO reomove?
-    ).call()
+  const onAddSuccess = (input) => {
+    const fn = async (context) => {
+      const result = await CheckableApi.createCheckable(
+        context.flowId,
+        false,
+        input
+      )
+      context.stateUpdate('blocks', result)
+    }
+    return eventContainer(fn)
+  }
 
-  const onDeleteClick = withConfirm('Really delete?', () =>
-    CheckableApi.deleteCheckable(block.id)
+  const onAdd = withPrompt(
+    'Text',
+    '',
+    onAddSuccess,
+    undefined,
+    () => alert('Text can not be empty!')
   )
+
+  const onDeleteSuccess = () => {
+    const fn = async (context) => {
+      const result = await CheckableApi.deleteCheckable(block.id)
+      context.stateUpdate('blocks', result)
+    }
+    return eventContainer(fn)
+  }
+
+  const onDelete = withConfirm('Really delete?', onDeleteSuccess)
 
   return (
     <div>
-      <Button onClick={() => eventContainer('blocks', onAddClick)}>Add</Button>
-      <Button onClick={() => eventContainer('blocks', onDeleteClick)}>
-        Del
-      </Button>
+      <Button onClick={onAdd}>Add</Button>
+      <Button onClick={onDelete}>Del</Button>
       <Button>Up</Button>
       <Button>Down</Button>
     </div>
@@ -148,7 +152,7 @@ function Flow({ flow, blocks, eventContainer }) {
                 flow.name,
                 onInputFn,
                 undefined,
-                asNoopFn(alert, 'Name can not be empty!')
+                () => alert('Name can not be empty!')
               )}
             >
               {flow.name}
@@ -232,20 +236,19 @@ export default function Page() {
   }, [id, meta, initialBlocks])
 
   // EVENTS
-  const setIsOutdated = (type, result) => {
-    console.log('result.status', result.status)
-    if (result.status === 'noop') {
-      return
-    }
+  const setIsOutdated = (type) => {
     setMeta((previous) => {
       return updateMeta(previous, type, 'isOutdated', true)
     })
   }
 
-  const eventContainerFn = partial(eventContainer, {
-    flowId: id,
-    stateUpdate: setIsOutdated,
-  })
+  const eventContainer = (callback) => {
+    const context = {
+      flowId: id,
+      stateUpdate: setIsOutdated,
+    }
+    callback.call(null, context)
+  }
 
   return (
     <div className="FlowPage">
@@ -253,7 +256,7 @@ export default function Page() {
         <Flow
           flow={flow}
           blocks={blocks}
-          eventContainer={eventContainerFn}
+          eventContainer={eventContainer}
         ></Flow>
       ) : (
         <div>Flow not found</div>

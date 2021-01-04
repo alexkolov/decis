@@ -3,6 +3,7 @@ import { Flow } from '../models'
 
 // TODO use everywhere
 // import { SuccessResult, ErrorResult } from '../utils/api'
+// Create a higher abstraction
 
 export function createFlow({ name }) {
   const payload = new Flow({ name })
